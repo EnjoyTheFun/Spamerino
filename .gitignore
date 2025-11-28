@@ -1,0 +1,15 @@
+# Dependency directories
+node_modules/
+
+# Build artifacts
+dist/
+core-dist/
+
+# Legacy sources
+old/
+
+# Misc
+*.log
+.DS_Store
+todo.txt
+.editorconfig

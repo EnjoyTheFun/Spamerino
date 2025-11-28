@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Spamerino",
+  "description": "Save, organize and quickly paste Twitch messages",
+  "version": "0.1.0",
+  "author": "EnjoyTheFun",
+  "homepage_url": "https://github.com/EnjoyTheFun/spamerino",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "Spamerino Settings",
+    "default_popup": "popup/index.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  },
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["https://*.twitch.tv/*", "http://*.twitch.tv/*"],
+  "content_scripts": [
+    { "matches": ["*://*.twitch.tv/*"], "js": ["content/index.js"], "run_at": "document_end" },
+    {
+      "matches": ["*://*.twitch.tv/*"],
+      "js": ["content/bridge.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "browser_specific_settings": { "gecko": { "id": "spamerino@etf.xd", "strict_min_version": "109.0" } }
+}
