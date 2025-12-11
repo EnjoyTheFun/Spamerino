@@ -4,9 +4,10 @@ const SETTINGS_KEY = 'spamerino-settings';
 
 export type Settings = {
 	showToggleIcon: boolean;
+	enableDuplicateBypass: boolean;
 };
 
-const DEFAULT_SETTINGS: Settings = { showToggleIcon: true };
+const DEFAULT_SETTINGS: Settings = { showToggleIcon: true, enableDuplicateBypass: false };
 
 export function loadSettings(): Settings {
 	try {
@@ -16,6 +17,7 @@ export function loadSettings(): Settings {
 			const parsed = JSON.parse(raw);
 			return {
 				showToggleIcon: typeof parsed.showToggleIcon === 'boolean' ? parsed.showToggleIcon : true,
+				enableDuplicateBypass: typeof parsed.enableDuplicateBypass === 'boolean' ? parsed.enableDuplicateBypass : false,
 			};
 		}
 
@@ -44,6 +46,7 @@ export async function loadSettingsAsync(): Promise<Settings> {
 			const parsed = result[SETTINGS_KEY];
 			const settings = {
 				showToggleIcon: typeof parsed.showToggleIcon === 'boolean' ? parsed.showToggleIcon : true,
+				enableDuplicateBypass: typeof parsed.enableDuplicateBypass === 'boolean' ? parsed.enableDuplicateBypass : false,
 			};
 			try {
 				localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));

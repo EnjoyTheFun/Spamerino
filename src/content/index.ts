@@ -40,6 +40,7 @@ setInterval(async () => {
 }, 2000);
 
 let cleanupToggle: (() => void) | null = null;
+let duplicateBypassEnabled = false;
 
 async function applySettings() {
 	const settings = await loadSettingsAsync();
@@ -50,6 +51,7 @@ async function applySettings() {
 	if (settings.showToggleIcon) {
 		cleanupToggle = setupToggleButton(document, () => widget.toggle());
 	}
+	duplicateBypassEnabled = Boolean(settings.enableDuplicateBypass);
 }
 
 applySettings();
@@ -99,6 +101,7 @@ const getDuplicateState = (channel: string) => {
 window.addEventListener(
 	'keydown',
 	(evt: KeyboardEvent) => {
+		if (!duplicateBypassEnabled) return;
 		if (evt.key !== 'Enter') return;
 
 		const prompt = platform.getPromptElement();
@@ -148,6 +151,7 @@ window.addEventListener(
 window.addEventListener(
 	'keydown',
 	(evt: KeyboardEvent) => {
+		if (!duplicateBypassEnabled) return;
 		if (evt.key !== 'ArrowUp') return;
 
 		const run = () => {
@@ -177,6 +181,7 @@ window.addEventListener(
 window.addEventListener(
 	'keydown',
 	(evt: KeyboardEvent) => {
+		if (!duplicateBypassEnabled) return;
 		if (evt.key !== 'ArrowDown') return;
 
 		const run = () => {

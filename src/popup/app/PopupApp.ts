@@ -4,20 +4,33 @@ import { loadSettingsAsync, saveSettings, Settings } from '../../shared/settings
 
 export class PopupApp {
 	private readonly showToggleCheckbox: HTMLInputElement;
+	private readonly duplicateBypassCheckbox: HTMLInputElement;
 	private readonly resetButton: HTMLButtonElement;
 
 	constructor(private readonly documentRef: Document, private readonly store: LocalStore) {
 		this.showToggleCheckbox = documentRef.getElementById('showToggleIcon') as HTMLInputElement;
+		this.duplicateBypassCheckbox = documentRef.getElementById('enableDuplicateBypass') as HTMLInputElement;
 		this.resetButton = documentRef.getElementById('resetDataBtn') as HTMLButtonElement;
 	}
 
 	async init() {
 		const settings = await loadSettingsAsync();
 		this.showToggleCheckbox.checked = settings.showToggleIcon;
+		this.duplicateBypassCheckbox.checked = settings.enableDuplicateBypass;
 
 		this.showToggleCheckbox.addEventListener('change', () => {
 			const updated: Settings = {
 				showToggleIcon: this.showToggleCheckbox.checked,
+				enableDuplicateBypass: this.duplicateBypassCheckbox.checked,
+			};
+			saveSettings(updated);
+			this.notifySettingsChanged(updated);
+		});
+
+		this.duplicateBypassCheckbox.addEventListener('change', () => {
+			const updated: Settings = {
+				showToggleIcon: this.showToggleCheckbox.checked,
+				enableDuplicateBypass: this.duplicateBypassCheckbox.checked,
 			};
 			saveSettings(updated);
 			this.notifySettingsChanged(updated);
