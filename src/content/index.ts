@@ -98,11 +98,19 @@ const getDuplicateState = (channel: string) => {
 	return state;
 };
 
+const dismissTwitchWarnings = () => {
+	const warningTray = document.querySelector('.chat-input-tray__open');
+	if (warningTray && warningTray.textContent?.includes('Message Not Sent')) {
+		const closeButton = warningTray.querySelector('button[aria-label="Close"]') as HTMLButtonElement;
+		closeButton?.click();
+	}
+};
+
 window.addEventListener(
 	'keydown',
 	(evt: KeyboardEvent) => {
 		if (!duplicateBypassEnabled) return;
-		if (evt.key !== 'Enter') return;
+		if (evt.key !== 'Enter' || evt.shiftKey) return;
 
 		const prompt = platform.getPromptElement();
 		if (!prompt || document.activeElement !== prompt) return;
@@ -125,22 +133,38 @@ window.addEventListener(
 			return;
 		}
 
-		let next = normalized;
 		let alt = state.alt;
 
 		if (state.text === normalized) {
 			alt = !alt;
-			if (alt) {
-				next = normalized + ' ' + UNICODE_TAG_0;
-			} else {
-				next = normalized;
-			}
 		} else {
 			alt = false;
 		}
 
-		if (next !== rawText) {
-			platform.setChatInput(next);
+		if (state.text === normalized && alt) {
+			evt.preventDefault();
+			evt.stopPropagation();
+
+			const selection = window.getSelection();
+			const range = document.createRange();
+			range.selectNodeContents(prompt);
+			range.collapse(false);
+			selection?.removeAllRanges();
+			selection?.addRange(range);
+
+			try {
+				document.execCommand('insertText', false, ' ' + UNICODE_TAG_0);
+			} catch {
+				prompt.appendChild(document.createTextNode(' ' + UNICODE_TAG_0));
+			}
+
+			prompt.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true }));
+
+			setTimeout(() => {
+				dismissTwitchWarnings();
+				prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
+				setTimeout(() => dismissTwitchWarnings(), 100);
+			}, 0);
 		}
 
 		lastSentByChannel[channel] = { text: normalized, alt, ts: Date.now() };
@@ -165,8 +189,6 @@ window.addEventListener(
 			const state = getDuplicateState(channel);
 
 			if (state.text && normalized === state.text) {
-				const adjusted = normalized + ' ' + UNICODE_TAG_0;
-				platform.setChatInput(adjusted);
 				lastSentByChannel[channel] = { ...state, pendingAdjusted: true, ts: Date.now() };
 			} else {
 				lastSentByChannel[channel] = { ...state, pendingAdjusted: false, ts: Date.now() };
@@ -195,8 +217,6 @@ window.addEventListener(
 			const state = getDuplicateState(channel);
 
 			if (state.text && normalized === state.text) {
-				const adjusted = normalized + ' ' + UNICODE_TAG_0;
-				platform.setChatInput(adjusted);
 				lastSentByChannel[channel] = { ...state, pendingAdjusted: true, ts: Date.now() };
 			} else {
 				lastSentByChannel[channel] = { ...state, pendingAdjusted: false, ts: Date.now() };
