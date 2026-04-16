@@ -253,11 +253,14 @@ export class CopyPastaWidget {
 					channelSuggestion: channel || '',
 					onSaved: (item: CopyPasta) => {
 						if (!scopedFilter(item)) return;
-						items.unshift(item);
+						items.push(item);
 						searchFilter.setItems(items);
 						visible = searchFilter.computeVisibleItems();
 						searchFilter.recomputeVisible(visible, item.id);
 						render();
+						listEl.scrollTop = listEl.scrollHeight;
+						searchFilter.setPointer(visible.length - 1);
+						select();
 					},
 				}),
 		});
