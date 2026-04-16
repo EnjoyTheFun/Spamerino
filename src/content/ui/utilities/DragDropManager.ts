@@ -1,5 +1,3 @@
-import { Item } from '../../utils/copyPasta';
-
 export type DragState = {
 	sourceIndex: number;
 	insertIndex: number;
@@ -17,11 +15,13 @@ export class DragDropManager {
 	private dragState: DragState | null = null;
 	private dropIndicatorIndex = -1;
 	private dropAfterLast = false;
+	private autoScrollInterval: ReturnType<typeof setInterval> | null = null;
+	private lastClientY = 0;
 
 	constructor(
 		private readonly root: HTMLElement,
 		private readonly callbacks: DragDropCallbacks
-	) {}
+	) { }
 
 	startDrag(evt: PointerEvent, sourceIndex: number, handle: HTMLButtonElement, rows: HTMLDivElement[]): void {
 		if (evt.button !== 0) return;
@@ -57,9 +57,40 @@ export class DragDropManager {
 		if (!this.dragState) return;
 		evt.preventDefault();
 
+		this.lastClientY = evt.clientY;
 		const insertIndex = this.computeInsertIndex(evt.clientY, rows);
 		this.dragState.insertIndex = insertIndex;
 		this.setDropIndicator(insertIndex, rows);
+
+		this.updateAutoScroll();
+	}
+
+	private updateAutoScroll(): void {
+		const listEl = this.root.querySelector('.list') as HTMLElement;
+		if (!listEl) return;
+
+		const rect = listEl.getBoundingClientRect();
+		const scrollZoneSize = 50;
+		const distToTop = this.lastClientY - rect.top;
+		const distToBottom = rect.bottom - this.lastClientY;
+
+		if (this.autoScrollInterval) {
+			clearInterval(this.autoScrollInterval);
+			this.autoScrollInterval = null;
+		}
+
+		let scrollSpeed = 0;
+		if (distToTop >= 0 && distToTop < scrollZoneSize) {
+			scrollSpeed = -Math.max(2, scrollZoneSize - distToTop);
+		} else if (distToBottom >= 0 && distToBottom < scrollZoneSize) {
+			scrollSpeed = Math.max(2, scrollZoneSize - distToBottom);
+		}
+
+		if (scrollSpeed !== 0) {
+			this.autoScrollInterval = setInterval(() => {
+				listEl.scrollTop += scrollSpeed;
+			}, 16); // ~60fps
+		}
 	}
 
 	private handlePointerUp(
@@ -91,6 +122,11 @@ export class DragDropManager {
 		onOther: (e: PointerEvent) => void
 	): void {
 		if (!this.dragState) return;
+
+		if (this.autoScrollInterval) {
+			clearInterval(this.autoScrollInterval);
+			this.autoScrollInterval = null;
+		}
 
 		window.removeEventListener('pointermove', onMove);
 		window.removeEventListener('pointerup', onOther, true);
