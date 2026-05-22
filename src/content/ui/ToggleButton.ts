@@ -1,6 +1,11 @@
 import { ensureWidgetStyles } from './styles';
 
 const BUTTON_ID = 'twitch-copy-pasta-toggle-button';
+const BUTTON_ROW_SELECTORS = [
+	"div[data-test-selector='chat-input-buttons-container']",
+	"div[data-a-target='chat-input-buttons-container']",
+	'.chat-input__buttons-container',
+];
 const OUTER_CONTAINER_SELECTORS = [
 	'[data-a-target="chat-input-buttons-container"]',
 	'.chat-input__buttons-container',
@@ -32,6 +37,12 @@ const ICON_SVG = `
 </svg>`;
 
 function findButtonsContainer(documentRef: Document): HTMLElement | null {
+	const anchoredContainer = findAnchoredButtonsContainer(documentRef);
+
+	if (anchoredContainer) {
+		return anchoredContainer;
+	}
+
 	const structuralContainer = findStructuralButtonsContainer(documentRef);
 
 	if (structuralContainer) {
@@ -44,6 +55,25 @@ function findButtonsContainer(documentRef: Document): HTMLElement | null {
 	for (const selector of OUTER_CONTAINER_SELECTORS) {
 		const el = documentRef.querySelector<HTMLElement>(selector);
 		if (el) return el;
+	}
+
+	return null;
+}
+
+function findAnchoredButtonsContainer(documentRef: Document): HTMLElement | null {
+	for (const selector of BUTTON_ROW_SELECTORS) {
+		const row = documentRef.querySelector<HTMLElement>(selector);
+		if (!row) continue;
+
+		const anchor =
+			row.querySelector<HTMLElement>("button[data-a-target='chat-settings']") ??
+			row.querySelector<HTMLElement>("button[data-a-target='chat-settings-button']") ??
+			row.querySelector<HTMLElement>("button[data-a-target='chat-send-button']");
+
+		const wrapper = anchor?.parentElement as HTMLElement | null;
+		const container = (wrapper?.parentElement as HTMLElement | null) ?? row;
+
+		if (container) return container;
 	}
 
 	return null;
@@ -135,6 +165,26 @@ export function setupToggleButton(documentRef: Document, onToggle: () => void) {
 		const container = findButtonsContainer(documentRef);
 
 		if (!container) return false;
+
+		const settingsButton = findSettingsButton(documentRef);
+		const sendButton = findSendButton(documentRef);
+		const placementAnchor = settingsButton ?? sendButton;
+		const placementWrapper = placementAnchor?.parentElement as HTMLElement | null;
+		const shouldInsertBeforeWrapper =
+			Boolean(placementWrapper) &&
+			placementWrapper?.parentElement === container &&
+			placementWrapper !== host;
+
+		if (shouldInsertBeforeWrapper && placementWrapper) {
+			const alreadyBefore = host!.parentElement === container && host!.nextElementSibling === placementWrapper;
+
+			if (!alreadyBefore) {
+				container.insertBefore(host!, placementWrapper);
+			}
+
+			return true;
+		}
+
 		const firstActionChild = Array.from(container.children).find(child => {
 			if (!(child instanceof HTMLElement)) return false;
 			if (child === host) return false;
