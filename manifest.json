@@ -19,12 +19,12 @@
       "32": "icons/icon-32.png"
     }
   },
-  "permissions": ["storage", "activeTab", "scripting"],
-  "host_permissions": ["https://*.twitch.tv/*", "http://*.twitch.tv/*"],
+  "permissions": ["storage", "scripting"],
+  "host_permissions": ["https://*.twitch.tv/*"],
   "content_scripts": [
-    { "matches": ["*://*.twitch.tv/*"], "js": ["content/index.js"], "run_at": "document_end" },
+    { "matches": ["https://*.twitch.tv/*"], "js": ["content/index.js"], "run_at": "document_end" },
     {
-      "matches": ["*://*.twitch.tv/*"],
+      "matches": ["https://*.twitch.tv/*"],
       "js": ["content/bridge.js"],
       "run_at": "document_start",
       "world": "MAIN"

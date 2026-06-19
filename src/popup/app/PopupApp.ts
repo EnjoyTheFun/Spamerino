@@ -5,11 +5,13 @@ import { loadSettingsAsync, saveSettings, Settings } from '../../shared/settings
 export class PopupApp {
 	private readonly showToggleCheckbox: HTMLInputElement;
 	private readonly duplicateBypassCheckbox: HTMLInputElement;
+	private readonly visibilityBypassCheckbox: HTMLInputElement;
 	private readonly resetButton: HTMLButtonElement;
 
 	constructor(private readonly documentRef: Document, private readonly store: LocalStore) {
 		this.showToggleCheckbox = documentRef.getElementById('showToggleIcon') as HTMLInputElement;
 		this.duplicateBypassCheckbox = documentRef.getElementById('enableDuplicateBypass') as HTMLInputElement;
+		this.visibilityBypassCheckbox = documentRef.getElementById('enableVisibilityBypass') as HTMLInputElement;
 		this.resetButton = documentRef.getElementById('resetDataBtn') as HTMLButtonElement;
 	}
 
@@ -17,11 +19,13 @@ export class PopupApp {
 		const settings = await loadSettingsAsync();
 		this.showToggleCheckbox.checked = settings.showToggleIcon;
 		this.duplicateBypassCheckbox.checked = settings.enableDuplicateBypass;
+		this.visibilityBypassCheckbox.checked = settings.enableVisibilityBypass;
 
 		this.showToggleCheckbox.addEventListener('change', () => {
 			const updated: Settings = {
 				showToggleIcon: this.showToggleCheckbox.checked,
 				enableDuplicateBypass: this.duplicateBypassCheckbox.checked,
+				enableVisibilityBypass: this.visibilityBypassCheckbox.checked,
 			};
 			saveSettings(updated);
 			this.notifySettingsChanged(updated);
@@ -31,6 +35,17 @@ export class PopupApp {
 			const updated: Settings = {
 				showToggleIcon: this.showToggleCheckbox.checked,
 				enableDuplicateBypass: this.duplicateBypassCheckbox.checked,
+				enableVisibilityBypass: this.visibilityBypassCheckbox.checked,
+			};
+			saveSettings(updated);
+			this.notifySettingsChanged(updated);
+		});
+
+		this.visibilityBypassCheckbox.addEventListener('change', () => {
+			const updated: Settings = {
+				showToggleIcon: this.showToggleCheckbox.checked,
+				enableDuplicateBypass: this.duplicateBypassCheckbox.checked,
+				enableVisibilityBypass: this.visibilityBypassCheckbox.checked,
 			};
 			saveSettings(updated);
 			this.notifySettingsChanged(updated);
@@ -47,9 +62,10 @@ export class PopupApp {
 	}
 
 	private notifySettingsChanged(settings: Settings) {
-		void extensionApi.tabs.query({ active: true, currentWindow: true }, (tabs: any[]) => {
+		void extensionApi.tabs.query({}, (tabs: any[]) => {
 			for (const tab of tabs) {
 				if (tab?.id && tab.url?.includes('twitch.tv')) {
+					this.persistSettingsToTwitchTab(tab.id, settings);
 					extensionApi.tabs.sendMessage(tab.id, {
 						type: `${MESSAGE_PREFIX}/settings-changed`,
 						settings,
@@ -57,6 +73,20 @@ export class PopupApp {
 				}
 			}
 		});
+	}
+
+	private persistSettingsToTwitchTab(tabId: number, settings: Settings) {
+		try {
+			void extensionApi.scripting.executeScript({
+				target: { tabId },
+				func: (settingsJson: string) => {
+					try {
+						localStorage.setItem('spamerino-settings', settingsJson);
+					} catch { }
+				},
+				args: [JSON.stringify(settings)],
+			});
+		} catch { }
 	}
 
 	private notifyDataReset() {
